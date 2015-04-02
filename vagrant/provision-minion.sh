@@ -6,6 +6,20 @@ MINION_IP=$4
 OPENSHIFT_SDN=$6
 MINION_INDEX=$5
 
+NETWORK_CONF_PATH=/etc/sysconfig/network-scripts/
+
+rm -f ${NETWORK_CONF_PATH}ifcfg-enp*
+
+# Use static network configuration
+cat <<EOF > ${NETWORK_CONF_PATH}ifcfg-eth1
+DEVICE=eth1
+ONBOOT=yes
+TYPE=Ethernet
+BOOTPROTO=none
+IPADDR=${MINION_IP}
+PREFIX=24
+EOF
+
 # Setup hosts file to support ping by hostname to master
 if [ ! "$(cat /etc/hosts | grep $MASTER_NAME)" ]; then
   echo "Adding $MASTER_NAME to hosts file"
@@ -23,6 +37,8 @@ for (( i=0; i<${#MINION_NAMES[@]}; i++)); do
   fi  
 done
 
+yum -y install deltarpm
+
 # Install the required packages
 yum install -y docker-io git golang e2fsprogs hg openvswitch net-tools bridge-utils
 
@@ -30,7 +46,7 @@ yum install -y docker-io git golang e2fsprogs hg openvswitch net-tools bridge-ut
 echo "Building openshift"
 pushd /vagrant
   ./hack/build-go.sh
-  cp _output/local/go/bin/openshift /usr/bin
+  cp -f _output/local/go/bin/openshift /usr/bin
 popd
 
 # Copy over the certificates directory

@@ -5,6 +5,20 @@ source $(dirname $0)/provision-config.sh
 
 OPENSHIFT_SDN=$4
 
+NETWORK_CONF_PATH=/etc/sysconfig/network-scripts/
+
+rm -f ${NETWORK_CONF_PATH}ifcfg-enp*
+
+# Use static network configuration
+cat <<EOF > ${NETWORK_CONF_PATH}ifcfg-eth1
+DEVICE=eth1
+ONBOOT=yes
+TYPE=Ethernet
+BOOTPROTO=none
+IPADDR=${MASTER_IP}
+PREFIX=24
+EOF
+
 # Setup hosts file to support ping by hostname to each minion in the cluster from apiserver
 node_list=""
 minion_ip_array=(${MINION_IPS//,/ })
@@ -19,6 +33,8 @@ for (( i=0; i<${#MINION_NAMES[@]}; i++)); do
 done
 node_list=${node_list:1}
 
+yum -y install deltarpm
+
 # Install the required packages
 yum install -y docker-io git golang e2fsprogs hg net-tools bridge-utils
 
@@ -26,7 +42,8 @@ yum install -y docker-io git golang e2fsprogs hg net-tools bridge-utils
 echo "Building openshift"
 pushd /vagrant
   ./hack/build-go.sh
-  cp _output/local/go/bin/openshift /usr/bin
+  cp -f _output/local/go/bin/openshift /usr/bin
+  ./hack/install-etcd.sh || true
   ./hack/install-etcd.sh
 popd
 
