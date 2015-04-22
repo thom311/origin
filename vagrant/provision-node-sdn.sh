@@ -8,10 +8,13 @@ pushd $HOME
 if [ -d openshift-sdn ]; then
     cd openshift-sdn
     git fetch origin
-    git reset --hard origin/master
+    git checkout sdn_no_lbr
+    git reset --hard origin/sdn_no_lbr
+    rm -f ovs-simple/bin/osdn-dhclient-script
 else
-    git clone https://github.com/openshift/openshift-sdn
+    git clone https://github.com/rajatchopra/openshift-sdn.git
     cd openshift-sdn
+    git checkout sdn_no_lbr
 fi
 
 make clean
